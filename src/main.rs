@@ -130,14 +130,15 @@ pub fn main() -> ! {
     let mut game_frame_count = 0;
     let mut asteroids: [Option<Asteroid>; 8] = Default::default();
 
-    let one: Number<8> = 1.into();
+    let one_number_8: Number<8> = 1.into();
+    let one: Number<10> = 1.into();
 
     loop {
         game_frame_count += 1;
 
         input.update();
 
-        character.angle -= one * (input.x_tri() as i32) / 100;
+        character.angle -= one_number_8 * (input.x_tri() as i32) / 100;
         character.matrix.attributes = AffineMatrixAttributes {
             p_a: character.angle.cos().to_raw() as i16,
             p_b: -character.angle.sin().to_raw() as i16,
@@ -204,8 +205,8 @@ pub fn main() -> ! {
                     y: (HEIGHT / 2).into(),
                 },
                 velocity: Vector2D {
-                    x: 0.into(),
-                    y: 0.into(),
+                    x: one / 5,
+                    y: one / 7,
                 },
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
@@ -227,13 +228,14 @@ pub fn main() -> ! {
         for asteroid in asteroids.iter_mut().flatten() {
             asteroid.position.x += asteroid.velocity.x;
             asteroid.position.y += asteroid.velocity.y;
+            asteroid.position.wrap_to_bounds(16, screen_bounds);
 
             asteroid
                 .object
-                .set_x(asteroid.position.x.floor() as u16 - 8);
+                .set_x((asteroid.position.x.floor() - 8) as u16);
             asteroid
                 .object
-                .set_y(asteroid.position.y.floor() as u16 - 8);
+                .set_y((asteroid.position.y.floor() - 8) as u16);
             asteroid.object.commit();
             asteroid.matrix.commit();
         }
