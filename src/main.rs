@@ -6,7 +6,7 @@ use agb::display::{
     HEIGHT, WIDTH,
 };
 
-use agb::number::Num;
+use agb::number::{change_base, Num};
 
 struct Character<'a> {
     object: ObjectAffine<'a>,
@@ -24,8 +24,8 @@ struct Bullet<'a> {
 
 #[derive(Clone, Copy)]
 struct Vector2D {
-    x: Num<8>,
-    y: Num<8>,
+    x: Num<10>,
+    y: Num<10>,
 }
 
 mod sprite_sheet {
@@ -110,8 +110,8 @@ pub fn main() -> ! {
             0
         };
 
-        character.velocity.x += cos(angle) / 40 * acceleration;
-        character.velocity.y += -sin(angle) / 40 * acceleration;
+        character.velocity.x += change_base(cos(angle)) / 40 * acceleration;
+        character.velocity.y += -change_base(sin(angle)) / 40 * acceleration;
 
         character.velocity.x = character.velocity.x * 120 / 121;
         character.velocity.y = character.velocity.y * 120 / 121;
@@ -133,8 +133,8 @@ pub fn main() -> ! {
         if input.is_just_pressed(agb::input::Button::B) {
             bullet.position = character.position;
             bullet.velocity = character.velocity;
-            bullet.velocity.x += cos(angle) * 2;
-            bullet.velocity.y += -sin(angle) * 2;
+            bullet.velocity.x += change_base(cos(angle)) * 2;
+            bullet.velocity.y += -change_base(sin(angle)) * 2;
             bullet.present = true;
         }
 
