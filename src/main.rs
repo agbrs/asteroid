@@ -51,8 +51,8 @@ pub fn main() -> ! {
         object: objs.get_object_affine(),
         matrix: objs.get_affine(),
         position: Vector2D {
-            x: (WIDTH / 2 - 8) << 8,
-            y: (HEIGHT / 2 - 8) << 8,
+            x: (WIDTH / 2) << 8,
+            y: (HEIGHT / 2) << 8,
         },
         velocity: Vector2D { x: 0, y: 0 },
     };
@@ -72,11 +72,11 @@ pub fn main() -> ! {
     loop {
         input.update();
 
-        angle += input.x_tri() as i16;
+        angle -= input.x_tri() as i16;
         character.matrix.attributes = AffineMatrixAttributes {
             p_a: cos(angle),
-            p_b: sin(angle),
-            p_c: -sin(angle),
+            p_b: -sin(angle),
+            p_c: sin(angle),
             p_d: cos(angle),
         };
         character.matrix.commit();
@@ -88,13 +88,20 @@ pub fn main() -> ! {
         };
 
         character.velocity.x += acceleration * cos(angle) as i32 >> 5;
-        character.velocity.y += acceleration * sin(angle) as i32 >> 5;
+        character.velocity.y += acceleration * -sin(angle) as i32 >> 5;
+
+        character.velocity.x = 120 * character.velocity.x / 121;
+        character.velocity.y = 120 * character.velocity.y / 121;
 
         character.position.x += character.velocity.x;
         character.position.y += character.velocity.y;
 
-        character.object.set_x((character.position.x >> 8) as u16);
-        character.object.set_y((character.position.y >> 8) as u16);
+        character
+            .object
+            .set_x(((8 + character.position.x >> 8).rem_euclid(WIDTH + 16) - 16) as u16);
+        character
+            .object
+            .set_y(((8 + character.position.y >> 8).rem_euclid(HEIGHT + 16) - 16) as u16);
 
         character.object.commit();
 
