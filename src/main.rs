@@ -8,6 +8,29 @@ use agb::display::{
 
 use agb::number::{change_base, Number};
 
+struct RandomNumberGenerator {
+    state: [u32; 4],
+}
+
+impl RandomNumberGenerator {
+    fn next(&mut self) -> i32 {
+        let result = (self.state[0].wrapping_add(self.state[3]))
+            .rotate_left(7)
+            .wrapping_mul(9);
+        let t = self.state[1].wrapping_shr(9);
+
+        self.state[2] ^= self.state[0];
+        self.state[3] ^= self.state[1];
+        self.state[1] ^= self.state[2];
+        self.state[0] ^= self.state[3];
+
+        self.state[2] ^= t;
+        self.state[3] = self.state[3].rotate_left(11);
+
+        result as i32
+    }
+}
+
 struct Character<'a> {
     object: ObjectAffine<'a>,
     matrix: AffineMatrix<'a>,
@@ -27,6 +50,13 @@ struct Bullet<'a> {
 struct Vector2D {
     x: Number<10>,
     y: Number<10>,
+}
+
+struct Asteroid<'a> {
+    object: ObjectAffine<'a>,
+    matrix: AffineMatrix<'a>,
+    position: Vector2D,
+    velocity: Vector2D,
 }
 
 mod sprite_sheet {
@@ -71,6 +101,10 @@ pub fn main() -> ! {
     character.object.commit();
     character.matrix.commit();
 
+    let mut rng = RandomNumberGenerator {
+        state: [0, 1, 2, 3],
+    };
+
     let mut bullet = Bullet {
         object: objs.get_object_standard(),
         position: Vector2D {
@@ -93,9 +127,14 @@ pub fn main() -> ! {
         y: HEIGHT.into(),
     };
 
+    let mut game_frame_count = 0;
+    let mut asteroids: [Option<Asteroid>; 8] = Default::default();
+
     let one: Number<8> = 1.into();
 
     loop {
+        game_frame_count += 1;
+
         input.update();
 
         character.angle -= one * (input.x_tri() as i32) / 100;
@@ -154,6 +193,49 @@ pub fn main() -> ! {
         } else {
             bullet.object.hide();
             bullet.object.commit();
+        }
+
+        if game_frame_count == 256 {
+            let mut new_asteroid = Asteroid {
+                object: objs.get_object_affine(),
+                matrix: objs.get_affine(),
+                position: Vector2D {
+                    x: (WIDTH / 2).into(),
+                    y: (HEIGHT / 2).into(),
+                },
+                velocity: Vector2D {
+                    x: 0.into(),
+                    y: 0.into(),
+                },
+            };
+            new_asteroid.object.set_sprite_size(Size::S16x16);
+            new_asteroid.object.set_affine_mat(&new_asteroid.matrix);
+            new_asteroid.object.set_tile_id(12);
+            new_asteroid.object.show();
+            new_asteroid.matrix.attributes =
+                agb::syscall::affine_matrix(1.into(), 1.into(), 0.into());
+            new_asteroid.matrix.commit();
+
+            for ast in asteroids.iter_mut() {
+                if ast.is_none() {
+                    *ast = Some(new_asteroid);
+                    break;
+                }
+            }
+        }
+
+        for asteroid in asteroids.iter_mut().flatten() {
+            asteroid.position.x += asteroid.velocity.x;
+            asteroid.position.y += asteroid.velocity.y;
+
+            asteroid
+                .object
+                .set_x(asteroid.position.x.floor() as u16 - 8);
+            asteroid
+                .object
+                .set_y(asteroid.position.y.floor() as u16 - 8);
+            asteroid.object.commit();
+            asteroid.matrix.commit();
         }
 
         vblank.wait_for_VBlank();
