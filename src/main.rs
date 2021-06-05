@@ -6,7 +6,7 @@ use agb::display::{
     HEIGHT, WIDTH,
 };
 
-use agb::sound::{Channel1, DutyCycle, EnvelopeSettings, SoundDirection, SweepSettings};
+use agb::sound::{Channel1, DutyCycle, EnvelopeSettings, Noise, SoundDirection, SweepSettings};
 
 use agb::number::{change_base, Number};
 
@@ -270,6 +270,8 @@ pub fn main() -> ! {
                     ast.object.commit();
                     *asteroid = None;
                     bullet.present = false;
+
+                    explode_sound(agb.sound.noise());
                 }
             }
         }
@@ -304,6 +306,16 @@ fn shoot_sound(channel1: Channel1) {
         &SweepSettings::new(7, SoundDirection::Decrease, 7),
         &EnvelopeSettings::new(5, SoundDirection::Decrease, 15),
         DutyCycle::OneQuarter,
+    );
+}
+
+fn explode_sound(noise: Noise) {
+    noise.play_sound(
+        Some(0),
+        &EnvelopeSettings::new(5, SoundDirection::Decrease, 5),
+        0,
+        false,
+        7,
     );
 }
 
