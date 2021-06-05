@@ -59,6 +59,8 @@ struct Asteroid<'a> {
     matrix: AffineMatrix<'a>,
     position: Vector2D,
     velocity: Vector2D,
+    angle: Number<8>,
+    angular_velocity: Number<8>,
 }
 
 mod sprite_sheet {
@@ -212,6 +214,8 @@ pub fn main() -> ! {
                     x: Number::<10>::from_raw(rng.next()) % 1,
                     y: Number::<10>::from_raw(rng.next()) % 1,
                 },
+                angular_velocity: Number::<8>::from_raw(rng.next()) % (one_number_8 / 50),
+                angle: Number::<8>::from_raw(rng.next()) % 256,
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
             new_asteroid.object.set_affine_mat(&new_asteroid.matrix);
@@ -232,7 +236,16 @@ pub fn main() -> ! {
         for asteroid in asteroids.iter_mut().flatten() {
             asteroid.position.x += asteroid.velocity.x;
             asteroid.position.y += asteroid.velocity.y;
+
+            asteroid.angle += asteroid.angular_velocity;
             asteroid.position.wrap_to_bounds(16, screen_bounds);
+
+            asteroid.matrix.attributes = AffineMatrixAttributes {
+                p_a: asteroid.angle.cos().to_raw() as i16,
+                p_b: -asteroid.angle.sin().to_raw() as i16,
+                p_c: asteroid.angle.sin().to_raw() as i16,
+                p_d: asteroid.angle.cos().to_raw() as i16,
+            };
 
             asteroid
                 .object
