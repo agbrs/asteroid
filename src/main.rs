@@ -296,7 +296,7 @@ fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: Number<10>) -> bool {
     let x = pos_a.x - pos_b.x;
     let y = pos_a.y - pos_b.y;
 
-    x.abs() < r && y.abs() < r && x * x + y * y < r * r
+    x * x + y * y < r * r
 }
 
 fn shoot_sound(channel1: Channel1) {
