@@ -65,6 +65,7 @@ pub fn main() -> ! {
     character.object.set_affine_mat(&character.matrix);
     character.object.show();
     character.object.set_sprite_size(Size::S16x16);
+    character.object.set_tile_id(0);
 
     character.matrix.attributes = agb::syscall::affine_matrix(1.into(), 1.into(), 0);
     character.object.commit();
@@ -83,7 +84,7 @@ pub fn main() -> ! {
         present: false,
     };
 
-    bullet.object.set_tile_id(4);
+    bullet.object.set_tile_id(8);
 
     let mut input = agb::input::ButtonController::new();
 
@@ -107,8 +108,10 @@ pub fn main() -> ! {
         character.matrix.commit();
 
         let acceleration = if input.is_pressed(agb::input::Button::A) {
+            character.object.set_tile_id(4);
             1
         } else {
+            character.object.set_tile_id(0);
             0
         };
 
