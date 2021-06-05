@@ -6,6 +6,8 @@ use agb::display::{
     HEIGHT, WIDTH,
 };
 
+use agb::number::Num;
+
 struct Character<'a> {
     object: ObjectAffine<'a>,
     matrix: AffineMatrix<'a>,
@@ -22,8 +24,8 @@ struct Bullet<'a> {
 
 #[derive(Clone, Copy)]
 struct Vector2D {
-    x: i32,
-    y: i32,
+    x: Num<8>,
+    y: Num<8>,
 }
 
 mod sprite_sheet {
@@ -49,10 +51,13 @@ pub fn main() -> ! {
         object: objs.get_object_affine(),
         matrix: objs.get_affine(),
         position: Vector2D {
-            x: (WIDTH / 2) << 8,
-            y: (HEIGHT / 2) << 8,
+            x: (WIDTH / 2).into(),
+            y: (HEIGHT / 2).into(),
         },
-        velocity: Vector2D { x: 0, y: 0 },
+        velocity: Vector2D {
+            x: 0.into(),
+            y: 0.into(),
+        },
     };
 
     character.object.set_affine_mat(&character.matrix);
@@ -65,31 +70,37 @@ pub fn main() -> ! {
 
     let mut bullet = Bullet {
         object: objs.get_object_standard(),
-        position: Vector2D { x: 0, y: 0 },
-        velocity: Vector2D { x: 0, y: 0 },
+        position: Vector2D {
+            x: 0.into(),
+            y: 0.into(),
+        },
+        velocity: Vector2D {
+            x: 0.into(),
+            y: 0.into(),
+        },
         present: false,
     };
 
     bullet.object.set_tile_id(4);
 
-    let mut angle = 0;
+    let mut angle = 0.into();
 
     let mut input = agb::input::ButtonController::new();
 
     let screen_bounds = Vector2D {
-        x: WIDTH << 8,
-        y: HEIGHT << 8,
+        x: WIDTH.into(),
+        y: HEIGHT.into(),
     };
 
     loop {
         input.update();
 
-        angle -= input.x_tri() as i16;
+        angle -= input.x_tri() as i32;
         character.matrix.attributes = AffineMatrixAttributes {
-            p_a: cos(angle),
-            p_b: -sin(angle),
-            p_c: sin(angle),
-            p_d: cos(angle),
+            p_a: cos(angle).to_raw() as i16,
+            p_b: -sin(angle).to_raw() as i16,
+            p_c: sin(angle).to_raw() as i16,
+            p_d: cos(angle).to_raw() as i16,
         };
         character.matrix.commit();
 
@@ -99,11 +110,11 @@ pub fn main() -> ! {
             0
         };
 
-        character.velocity.x += acceleration * cos(angle) as i32 >> 5;
-        character.velocity.y += acceleration * -sin(angle) as i32 >> 5;
+        character.velocity.x += cos(angle) / 5 * acceleration;
+        character.velocity.y += -sin(angle) / 5 * acceleration;
 
-        character.velocity.x = 120 * character.velocity.x / 121;
-        character.velocity.y = 120 * character.velocity.y / 121;
+        character.velocity.x = character.velocity.x * 120 / 121;
+        character.velocity.y = character.velocity.y * 120 / 121;
 
         character.position.x += character.velocity.x;
         character.position.y += character.velocity.y;
@@ -112,18 +123,18 @@ pub fn main() -> ! {
 
         character
             .object
-            .set_x((character.position.x >> 8) as u16 - 8);
+            .set_x(character.position.x.int() as u16 - 8);
         character
             .object
-            .set_y((character.position.y >> 8) as u16 - 8);
+            .set_y(character.position.y.int() as u16 - 8);
 
         character.object.commit();
 
         if input.is_just_pressed(agb::input::Button::B) {
             bullet.position = character.position;
             bullet.velocity = character.velocity;
-            bullet.velocity.x += cos(angle) as i32 * 2;
-            bullet.velocity.y += -sin(angle) as i32 * 2;
+            bullet.velocity.x += cos(angle) * 2;
+            bullet.velocity.y += -sin(angle) * 2;
             bullet.present = true;
         }
 
@@ -131,8 +142,8 @@ pub fn main() -> ! {
             bullet.position.x += bullet.velocity.x;
             bullet.position.y += bullet.velocity.y;
             bullet.position.wrap_to_bounds(8 << 8, screen_bounds);
-            bullet.object.set_x((bullet.position.x >> 8) as u16 - 4);
-            bullet.object.set_y((bullet.position.y >> 8) as u16 - 4);
+            bullet.object.set_x(bullet.position.x.int() as u16 - 4);
+            bullet.object.set_y(bullet.position.y.int() as u16 - 4);
             bullet.object.show();
             bullet.object.commit();
         } else {
@@ -151,11 +162,11 @@ impl Vector2D {
     }
 }
 
-fn sin_quadrent(n: i16) -> i16 {
+fn sin_quadrent(n: i32) -> Num<8> {
     SINE_LUT[n.rem_euclid(32) as usize]
 }
 
-fn sin(n: i16) -> i16 {
+fn sin(n: i32) -> Num<8> {
     let quadrent = (n >> 5).rem_euclid(4);
     match quadrent {
         0 => sin_quadrent(n),
@@ -166,11 +177,41 @@ fn sin(n: i16) -> i16 {
     }
 }
 
-fn cos(n: i16) -> i16 {
+fn cos(n: i32) -> Num<8> {
     sin(n + 32)
 }
 
-const SINE_LUT: [i16; 32] = [
-    0, 13, 25, 38, 50, 62, 74, 86, 98, 109, 121, 132, 142, 152, 162, 172, 181, 190, 198, 206, 213,
-    220, 226, 231, 237, 241, 245, 248, 251, 253, 255, 256,
+const SINE_LUT: [Num<8>; 32] = [
+    Num::from_raw(0),
+    Num::from_raw(13),
+    Num::from_raw(25),
+    Num::from_raw(37),
+    Num::from_raw(50),
+    Num::from_raw(62),
+    Num::from_raw(74),
+    Num::from_raw(86),
+    Num::from_raw(98),
+    Num::from_raw(109),
+    Num::from_raw(120),
+    Num::from_raw(131),
+    Num::from_raw(142),
+    Num::from_raw(152),
+    Num::from_raw(162),
+    Num::from_raw(171),
+    Num::from_raw(180),
+    Num::from_raw(189),
+    Num::from_raw(197),
+    Num::from_raw(205),
+    Num::from_raw(212),
+    Num::from_raw(219),
+    Num::from_raw(225),
+    Num::from_raw(231),
+    Num::from_raw(236),
+    Num::from_raw(240),
+    Num::from_raw(244),
+    Num::from_raw(247),
+    Num::from_raw(250),
+    Num::from_raw(252),
+    Num::from_raw(254),
+    Num::from_raw(255),
 ];
