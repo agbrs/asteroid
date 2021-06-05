@@ -9,6 +9,9 @@ edition = "2018"
 [dependencies]
 agb = {path = "../rust/agb"}
 
+[build-dependencies]
+agb_image_converter = {path = "../rust/agb-image-converter"}
+
 [profile.release]
 panic = "abort"
 lto = true
