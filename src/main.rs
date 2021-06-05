@@ -141,7 +141,9 @@ pub fn main() -> ! {
     loop {
         game_frame_count += 1;
 
-        input.update();
+        if !bullet.present {
+            input.update();
+        }
 
         character.angle -= one_number_8 * (input.x_tri() as i32) / 100;
         character.matrix.attributes = AffineMatrixAttributes {
@@ -181,6 +183,7 @@ pub fn main() -> ! {
         character.object.commit();
 
         if input.is_just_pressed(agb::input::Button::B) {
+            input.update();
             bullet.position = character.position;
             bullet.velocity = character.velocity;
             bullet.velocity.x += change_base(character.angle.cos()) * 2;
@@ -290,7 +293,8 @@ fn axis_aligned_bounding_box_check(
 fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: Number<10>) -> bool {
     let x = pos_a.x - pos_b.x;
     let y = pos_a.y - pos_b.y;
-    x * x + y * y < r * r
+
+    x.abs() < r && y.abs() < r && x * x + y * y < r * r
 }
 
 fn shoot_sound(channel1: Channel1) {
