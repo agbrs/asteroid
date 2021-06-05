@@ -6,6 +6,8 @@ use agb::display::{
     HEIGHT, WIDTH,
 };
 
+use agb::sound::{Channel1, DutyCycle, EnvelopeSettings, SoundDirection, SweepSettings};
+
 use agb::number::{change_base, Number};
 
 struct RandomNumberGenerator {
@@ -66,6 +68,7 @@ mod sprite_sheet {
 #[no_mangle]
 pub fn main() -> ! {
     let mut agb = agb::Gba::new();
+    agb.sound.enable();
 
     let images = sprite_sheet::TILE_DATA;
     let palette = sprite_sheet::PALETTE_DATA;
@@ -181,6 +184,7 @@ pub fn main() -> ! {
             bullet.velocity.x += change_base(character.angle.cos()) * 2;
             bullet.velocity.y += -change_base(character.angle.sin()) * 2;
             bullet.present = true;
+            shoot_sound(agb.sound.channel1())
         }
 
         if bullet.present {
@@ -242,6 +246,16 @@ pub fn main() -> ! {
 
         vblank.wait_for_VBlank();
     }
+}
+
+fn shoot_sound(channel1: Channel1) {
+    channel1.play_sound(
+        1600,
+        Some(15),
+        &SweepSettings::new(7, SoundDirection::Decrease, 7),
+        &EnvelopeSettings::new(5, SoundDirection::Decrease, 15),
+        DutyCycle::OneQuarter,
+    );
 }
 
 impl Vector2D {
