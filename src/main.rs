@@ -13,6 +13,7 @@ struct Character<'a> {
     matrix: AffineMatrix<'a>,
     position: Vector2D,
     velocity: Vector2D,
+    angle: Number<8>,
 }
 
 struct Bullet<'a> {
@@ -58,6 +59,7 @@ pub fn main() -> ! {
             x: 0.into(),
             y: 0.into(),
         },
+        angle: 0.into(),
     };
 
     character.object.set_affine_mat(&character.matrix);
@@ -83,8 +85,6 @@ pub fn main() -> ! {
 
     bullet.object.set_tile_id(4);
 
-    let mut angle: Number<8> = 0.into();
-
     let mut input = agb::input::ButtonController::new();
 
     let screen_bounds = Vector2D {
@@ -97,12 +97,12 @@ pub fn main() -> ! {
     loop {
         input.update();
 
-        angle -= one * (input.x_tri() as i32) / 100;
+        character.angle -= one * (input.x_tri() as i32) / 100;
         character.matrix.attributes = AffineMatrixAttributes {
-            p_a: angle.cos().to_raw() as i16,
-            p_b: -angle.sin().to_raw() as i16,
-            p_c: angle.sin().to_raw() as i16,
-            p_d: angle.cos().to_raw() as i16,
+            p_a: character.angle.cos().to_raw() as i16,
+            p_b: -character.angle.sin().to_raw() as i16,
+            p_c: character.angle.sin().to_raw() as i16,
+            p_d: character.angle.cos().to_raw() as i16,
         };
         character.matrix.commit();
 
@@ -112,8 +112,8 @@ pub fn main() -> ! {
             0
         };
 
-        character.velocity.x += change_base(angle.cos()) / 40 * acceleration;
-        character.velocity.y += -change_base(angle.sin()) / 40 * acceleration;
+        character.velocity.x += change_base(character.angle.cos()) / 40 * acceleration;
+        character.velocity.y += -change_base(character.angle.sin()) / 40 * acceleration;
 
         character.velocity.x = character.velocity.x * 120 / 121;
         character.velocity.y = character.velocity.y * 120 / 121;
@@ -135,8 +135,8 @@ pub fn main() -> ! {
         if input.is_just_pressed(agb::input::Button::B) {
             bullet.position = character.position;
             bullet.velocity = character.velocity;
-            bullet.velocity.x += change_base(angle.cos()) * 2;
-            bullet.velocity.y += -change_base(angle.sin()) * 2;
+            bullet.velocity.x += change_base(character.angle.cos()) * 2;
+            bullet.velocity.y += -change_base(character.angle.sin()) * 2;
             bullet.present = true;
         }
 
