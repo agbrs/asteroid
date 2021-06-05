@@ -257,8 +257,40 @@ pub fn main() -> ! {
             asteroid.matrix.commit();
         }
 
+        for asteroid in asteroids.iter_mut() {
+            if !bullet.present {
+                break;
+            }
+            if let Some(ast) = asteroid {
+                if circle_collision(bullet.position, ast.position, (8 + 4).into()) {
+                    ast.object.hide();
+                    ast.object.commit();
+                    *asteroid = None;
+                    bullet.present = false;
+                }
+            }
+        }
+
         vblank.wait_for_VBlank();
     }
+}
+
+fn axis_aligned_bounding_box_check(
+    pos_a: Vector2D,
+    pos_b: Vector2D,
+    size_a: Vector2D,
+    size_b: Vector2D,
+) -> bool {
+    pos_a.x < pos_b.x + size_b.x
+        && pos_a.x + size_a.x > pos_b.x
+        && pos_a.y < pos_b.y + size_b.y
+        && pos_a.y + size_a.y > pos_b.y
+}
+
+fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: Number<10>) -> bool {
+    let x = pos_a.x - pos_b.x;
+    let y = pos_a.y - pos_b.y;
+    x * x + y * y < r * r
 }
 
 fn shoot_sound(channel1: Channel1) {
