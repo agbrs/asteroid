@@ -119,7 +119,7 @@ pub fn main() -> ! {
         character.position.x += character.velocity.x;
         character.position.y += character.velocity.y;
 
-        character.position.wrap_to_bounds(16 << 8, screen_bounds);
+        character.position.wrap_to_bounds(16, screen_bounds);
 
         character
             .object
@@ -141,7 +141,7 @@ pub fn main() -> ! {
         if bullet.present {
             bullet.position.x += bullet.velocity.x;
             bullet.position.y += bullet.velocity.y;
-            bullet.position.wrap_to_bounds(8 << 8, screen_bounds);
+            bullet.position.wrap_to_bounds(8, screen_bounds);
             bullet.object.set_x(bullet.position.x.int() as u16 - 4);
             bullet.object.set_y(bullet.position.y.int() as u16 - 4);
             bullet.object.show();
