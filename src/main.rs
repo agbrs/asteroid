@@ -110,8 +110,8 @@ pub fn main() -> ! {
             0
         };
 
-        character.velocity.x += cos(angle) / 5 * acceleration;
-        character.velocity.y += -sin(angle) / 5 * acceleration;
+        character.velocity.x += cos(angle) / 40 * acceleration;
+        character.velocity.y += -sin(angle) / 40 * acceleration;
 
         character.velocity.x = character.velocity.x * 120 / 121;
         character.velocity.y = character.velocity.y * 120 / 121;
@@ -123,10 +123,10 @@ pub fn main() -> ! {
 
         character
             .object
-            .set_x(character.position.x.int() as u16 - 8);
+            .set_x((character.position.x.int() - 8) as u16);
         character
             .object
-            .set_y(character.position.y.int() as u16 - 8);
+            .set_y((character.position.y.int() - 8) as u16);
 
         character.object.commit();
 
@@ -142,8 +142,8 @@ pub fn main() -> ! {
             bullet.position.x += bullet.velocity.x;
             bullet.position.y += bullet.velocity.y;
             bullet.position.wrap_to_bounds(8, screen_bounds);
-            bullet.object.set_x(bullet.position.x.int() as u16 - 4);
-            bullet.object.set_y(bullet.position.y.int() as u16 - 4);
+            bullet.object.set_x((bullet.position.x.int() - 4) as u16);
+            bullet.object.set_y((bullet.position.y.int() - 4) as u16);
             bullet.object.show();
             bullet.object.commit();
         } else {
