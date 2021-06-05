@@ -6,7 +6,7 @@ use agb::display::{
     HEIGHT, WIDTH,
 };
 
-use agb::number::{change_base, Num};
+use agb::number::{change_base, Number};
 
 struct Character<'a> {
     object: ObjectAffine<'a>,
@@ -24,8 +24,8 @@ struct Bullet<'a> {
 
 #[derive(Clone, Copy)]
 struct Vector2D {
-    x: Num<10>,
-    y: Num<10>,
+    x: Number<10>,
+    y: Number<10>,
 }
 
 mod sprite_sheet {
@@ -83,7 +83,7 @@ pub fn main() -> ! {
 
     bullet.object.set_tile_id(4);
 
-    let mut angle: Num<8> = 0.into();
+    let mut angle: Number<8> = 0.into();
 
     let mut input = agb::input::ButtonController::new();
 
@@ -92,7 +92,7 @@ pub fn main() -> ! {
         y: HEIGHT.into(),
     };
 
-    let one: Num<8> = 1.into();
+    let one: Number<8> = 1.into();
 
     loop {
         input.update();
