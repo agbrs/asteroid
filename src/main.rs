@@ -196,7 +196,7 @@ pub fn main() -> ! {
             bullet.object.commit();
         }
 
-        if game_frame_count == 256 {
+        if game_frame_count % 256 == 0 {
             let mut new_asteroid = Asteroid {
                 object: objs.get_object_affine(),
                 matrix: objs.get_affine(),
@@ -205,8 +205,8 @@ pub fn main() -> ! {
                     y: (HEIGHT / 2).into(),
                 },
                 velocity: Vector2D {
-                    x: one / 5,
-                    y: one / 7,
+                    x: Number::<10>::from_raw(rng.next()) % 1,
+                    y: Number::<10>::from_raw(rng.next()) % 1,
                 },
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
