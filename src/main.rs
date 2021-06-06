@@ -117,7 +117,7 @@ pub fn main() -> ! {
     character.matrix.commit();
 
     let mut rng = RandomNumberGenerator {
-        state: [0, 1, 2, 3],
+        state: [1014776995, 476057059, 3301633994, 706340607],
     };
 
     let mut bullet = Bullet {
