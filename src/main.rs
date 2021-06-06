@@ -70,6 +70,10 @@ mod sprite_sheet {
     include!(concat!(env!("OUT_DIR"), "/sprite_sheet.rs"));
 }
 
+mod background_sheet {
+    include!(concat!(env!("OUT_DIR"), "/background_sheet.rs"));
+}
+
 #[no_mangle]
 pub fn main() -> ! {
     let mut agb = agb::Gba::new();
@@ -84,7 +88,8 @@ pub fn main() -> ! {
     gfx.set_sprite_palettes(palette);
     gfx.set_sprite_tilemap(images);
 
-    gfx.set_background_palettes(palette);
+    gfx.set_background_palettes(background_sheet::PALETTE_DATA);
+    gfx.set_background_tilemap(0, background_sheet::TILE_DATA);
 
     let vblank = agb.display.vblank.get();
     let mut objs = gfx.object;
