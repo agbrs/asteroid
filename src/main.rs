@@ -77,10 +77,17 @@ mod background_sheet {
 }
 
 fn num_digits_iter(mut n: u32) -> impl core::iter::Iterator<Item = u8> {
+    let mut length = 0;
     core::iter::from_fn(move || {
         if n == 0 {
-            None
+            length += 1;
+            if length <= 1 {
+                Some(0)
+            } else {
+                None
+            }
         } else {
+            length += 1;
             let c = n % 10;
             n /= 10;
             Some(c as u8)
