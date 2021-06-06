@@ -78,7 +78,7 @@ pub fn main() -> ! {
 
     mixer.enable();
 
-    mixer.play_sound(SoundChannel::new(BACKGROUND_MUSIC));
+    mixer.play_sound(SoundChannel::new(BACKGROUND_MUSIC).should_loop());
 
     let images = sprite_sheet::TILE_DATA;
     let palette = sprite_sheet::PALETTE_DATA;
