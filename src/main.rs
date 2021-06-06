@@ -3,6 +3,7 @@
 
 const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
 const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
+const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
@@ -76,6 +77,8 @@ pub fn main() -> ! {
     let mut mixer = agb.mixer.mixer();
 
     mixer.enable();
+
+    mixer.play_sound(SoundChannel::new(BACKGROUND_MUSIC));
 
     let images = sprite_sheet::TILE_DATA;
     let palette = sprite_sheet::PALETTE_DATA;
