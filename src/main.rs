@@ -4,9 +4,10 @@
 const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
 const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 
+use core::cell::RefCell;
+
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
-    tiled0::{Background, Tiled0},
     HEIGHT, WIDTH,
 };
 
@@ -87,28 +88,24 @@ fn num_digits_iter(mut n: u32) -> impl core::iter::Iterator<Item = u8> {
     })
 }
 
-struct ScoreDisplay<'a> {
-    back: Background<'a>,
-    map: [u16; 10],
+struct ScoreDisplay {
+    map: RefCell<[u16; 10]>,
 }
 
-impl<'a> ScoreDisplay<'a> {
-    fn new(background: Background<'a>) -> ScoreDisplay<'a> {
+impl ScoreDisplay {
+    fn new() -> ScoreDisplay {
         ScoreDisplay {
-            back: background,
             map: Default::default(),
         }
     }
-    fn set_score(&mut self, score: u32) {
+    fn set_score(&self, score: u32) -> u32 {
+        let mut map = self.map.borrow_mut();
         let length = num_digits_iter(score).count();
         for (index, digit) in num_digits_iter(score).enumerate() {
-            self.map[length - index - 1] = (digit + 1) as u16;
+            map[length - index - 1] = (digit + 1) as u16;
         }
-        update_map(&mut self.back, &self.map, length as u32);
+        length as u32
     }
-}
-fn update_map<'a>(background: &'a mut Background<'a>, map: &'a [u16], dim_x: u32) {
-    background.set_map(map, dim_x, 1)
 }
 
 #[no_mangle]
@@ -128,7 +125,8 @@ pub fn main() -> ! {
     gfx.set_background_palettes(background_sheet::PALETTE_DATA);
     gfx.set_background_tilemap(0, background_sheet::TILE_DATA);
 
-    let mut score_display = ScoreDisplay::new(gfx.get_background().unwrap());
+    let mut background_score = gfx.get_background().unwrap();
+    let score_display = ScoreDisplay::new();
 
     let vblank = agb.display.vblank.get();
     let mut objs = agb.display.object.get();
@@ -189,9 +187,12 @@ pub fn main() -> ! {
     let one_number_8: Number<8> = 1.into();
     let one: Number<10> = 1.into();
 
+    background_score.set_map_refcell(&score_display.map, 10, 1);
+    background_score.show();
     loop {
         game_frame_count += 1;
-        score_display.set_score(game_frame_count);
+        score_display.set_score(game_frame_count / 60);
+        background_score.draw_full_map();
 
         if !bullet.present {
             input.update();
