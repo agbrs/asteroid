@@ -285,7 +285,10 @@ pub fn main() -> ! {
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
             new_asteroid.object.set_affine_mat(&new_asteroid.matrix);
-            new_asteroid.object.set_tile_id(12);
+
+            let tile_id = if rng.next() % 2 == 0 { 12 } else { 16 };
+
+            new_asteroid.object.set_tile_id(tile_id);
             new_asteroid.object.show();
             new_asteroid.matrix.attributes =
                 agb::syscall::affine_matrix(1.into(), 1.into(), 0.into());
