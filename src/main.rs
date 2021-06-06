@@ -266,8 +266,6 @@ pub fn main() -> ! {
             }
             if let Some(ast) = asteroid {
                 if circle_collision(bullet.position, ast.position, (8 + 4).into()) {
-                    ast.object.hide();
-                    ast.object.commit();
                     *asteroid = None;
                     bullet.present = false;
 
