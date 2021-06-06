@@ -21,6 +21,8 @@ struct RandomNumberGenerator {
     state: [u32; 4],
 }
 
+const DUST_TTL: i32 = 120;
+
 impl RandomNumberGenerator {
     fn next(&mut self) -> i32 {
         let result = (self.state[0].wrapping_add(self.state[3]))
@@ -81,7 +83,7 @@ struct DustParticles<'a> {
     dusts: [Dust<'a>; 4],
     angle: Number<8>,
     angular_velocity: Number<8>,
-    ttl: u32,
+    ttl: i32,
 }
 
 mod sprite_sheet {
@@ -364,7 +366,7 @@ pub fn main() -> ! {
                                 angle: Number::<8>::from_raw(rng.next()) % 1,
                                 dusts: new_dust_particles,
                                 matrix: affine,
-                                ttl: 120,
+                                ttl: DUST_TTL,
                             });
 
                             break;
@@ -380,15 +382,16 @@ pub fn main() -> ! {
         }
 
         for dust_particle_group in dust_particles.iter_mut().flatten() {
+            let ttl = dust_particle_group.ttl;
             dust_particle_group.ttl -= 1;
 
             dust_particle_group.angle += dust_particle_group.angular_velocity;
 
             dust_particle_group.matrix.attributes = AffineMatrixAttributes {
-                p_a: dust_particle_group.angle.cos().to_raw() as i16,
-                p_b: -dust_particle_group.angle.sin().to_raw() as i16,
-                p_c: dust_particle_group.angle.sin().to_raw() as i16,
-                p_d: dust_particle_group.angle.cos().to_raw() as i16,
+                p_a: (dust_particle_group.angle.cos() * DUST_TTL / ttl).to_raw() as i16,
+                p_b: (-dust_particle_group.angle.sin() * DUST_TTL / ttl).to_raw() as i16,
+                p_c: (dust_particle_group.angle.sin() * DUST_TTL / ttl).to_raw() as i16,
+                p_d: (dust_particle_group.angle.cos() * DUST_TTL / ttl).to_raw() as i16,
             };
 
             dust_particle_group.matrix.commit();
