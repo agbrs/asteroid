@@ -79,6 +79,8 @@ pub fn main() -> ! {
     gfx.set_sprite_palettes(palette);
     gfx.set_sprite_tilemap(images);
 
+    gfx.set_background_palettes(palette);
+
     let vblank = agb.display.vblank.get();
     let mut objs = gfx.object;
     objs.enable();
