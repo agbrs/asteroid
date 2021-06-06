@@ -218,7 +218,7 @@ pub fn main() -> ! {
                     y: Number::<10>::from_raw(rng.next()) % 1,
                 },
                 angular_velocity: Number::<8>::from_raw(rng.next()) % (one_number_8 / 50),
-                angle: Number::<8>::from_raw(rng.next()) % 256,
+                angle: Number::<8>::from_raw(rng.next()) % 1,
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
             new_asteroid.object.set_affine_mat(&new_asteroid.matrix);
