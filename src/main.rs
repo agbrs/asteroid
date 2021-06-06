@@ -6,7 +6,7 @@ const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
 use core::cell::RefCell;
-use core::ops::AddAssign;
+use core::ops::{Add, AddAssign};
 
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
@@ -348,6 +348,29 @@ pub fn main() -> ! {
             }
             if let Some(ast) = asteroid {
                 if circle_collision(bullet.position, ast.position, (8 + 4).into()) {
+                    let affine = objs.get_affine();
+                    let new_dust_particles = [
+                        create_dust_particle(objs.get_object_affine(), &ast, &affine, &mut rng),
+                        create_dust_particle(objs.get_object_affine(), &ast, &affine, &mut rng),
+                        create_dust_particle(objs.get_object_affine(), &ast, &affine, &mut rng),
+                        create_dust_particle(objs.get_object_affine(), &ast, &affine, &mut rng),
+                    ];
+
+                    for dust_group in dust_particles.iter_mut() {
+                        if dust_group.is_none() {
+                            *dust_group = Some(DustParticles {
+                                angular_velocity: Number::<8>::from_raw(rng.next())
+                                    % (one_number_8 / 50),
+                                angle: Number::<8>::from_raw(rng.next()) % 1,
+                                dusts: new_dust_particles,
+                                matrix: affine,
+                                ttl: 120,
+                            });
+
+                            break;
+                        }
+                    }
+
                     *asteroid = None;
                     bullet.present = false;
 
@@ -398,6 +421,27 @@ pub fn main() -> ! {
     }
 }
 
+fn create_dust_particle<'a>(
+    mut obj: ObjectAffine<'a>,
+    ast: &Asteroid<'a>,
+    affine: &AffineMatrix<'a>,
+    rng: &mut RandomNumberGenerator,
+) -> Dust<'a> {
+    obj.set_affine_mat(affine);
+    obj.set_tile_id((20 + rng.next() % 4) as u16);
+    obj.show();
+
+    Dust {
+        object: obj,
+        position: ast.position,
+        velocity: ast.velocity
+            + Vector2D {
+                x: Number::<10>::from_raw(rng.next()) % 1,
+                y: Number::<10>::from_raw(rng.next()) % 1,
+            },
+    }
+}
+
 fn axis_aligned_bounding_box_check(
     pos_a: Vector2D,
     pos_b: Vector2D,
@@ -436,5 +480,14 @@ impl AddAssign<Vector2D> for Vector2D {
     fn add_assign(&mut self, rhs: Vector2D) {
         self.x += rhs.x;
         self.y += rhs.y;
+    }
+}
+
+impl Add<Vector2D> for Vector2D {
+    type Output = Self;
+    fn add(self, rhs: Vector2D) -> Self {
+        let mut c = self.clone();
+        c += rhs;
+        c
     }
 }
