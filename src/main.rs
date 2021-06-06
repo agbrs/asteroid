@@ -6,6 +6,7 @@ const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
+    tiled0::{Background, Tiled0},
     HEIGHT, WIDTH,
 };
 
@@ -74,6 +75,42 @@ mod background_sheet {
     include!(concat!(env!("OUT_DIR"), "/background_sheet.rs"));
 }
 
+fn num_digits_iter(mut n: u32) -> impl core::iter::Iterator<Item = u8> {
+    core::iter::from_fn(move || {
+        if n == 0 {
+            None
+        } else {
+            let c = n % 10;
+            n /= 10;
+            Some(c as u8)
+        }
+    })
+}
+
+struct ScoreDisplay<'a> {
+    back: Background<'a>,
+    map: [u16; 10],
+}
+
+impl<'a> ScoreDisplay<'a> {
+    fn new(background: Background<'a>) -> ScoreDisplay<'a> {
+        ScoreDisplay {
+            back: background,
+            map: Default::default(),
+        }
+    }
+    fn set_score(&mut self, score: u32) {
+        let length = num_digits_iter(score).count();
+        for (index, digit) in num_digits_iter(score).enumerate() {
+            self.map[length - index - 1] = (digit + 1) as u16;
+        }
+        update_map(&mut self.back, &self.map, length as u32);
+    }
+}
+fn update_map<'a>(background: &'a mut Background<'a>, map: &'a [u16], dim_x: u32) {
+    background.set_map(map, dim_x, 1)
+}
+
 #[no_mangle]
 pub fn main() -> ! {
     let mut agb = agb::Gba::new();
@@ -91,8 +128,10 @@ pub fn main() -> ! {
     gfx.set_background_palettes(background_sheet::PALETTE_DATA);
     gfx.set_background_tilemap(0, background_sheet::TILE_DATA);
 
+    let mut score_display = ScoreDisplay::new(gfx.get_background().unwrap());
+
     let vblank = agb.display.vblank.get();
-    let mut objs = gfx.object;
+    let mut objs = agb.display.object.get();
     objs.enable();
 
     let mut character = Character {
@@ -152,6 +191,7 @@ pub fn main() -> ! {
 
     loop {
         game_frame_count += 1;
+        score_display.set_score(game_frame_count);
 
         if !bullet.present {
             input.update();
