@@ -5,6 +5,8 @@ const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
 const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
+use core::cell::RefCell;
+
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
     HEIGHT, WIDTH,
@@ -71,6 +73,49 @@ mod sprite_sheet {
     include!(concat!(env!("OUT_DIR"), "/sprite_sheet.rs"));
 }
 
+mod background_sheet {
+    include!(concat!(env!("OUT_DIR"), "/background_sheet.rs"));
+}
+
+fn num_digits_iter(mut n: u32) -> impl core::iter::Iterator<Item = u8> {
+    let mut length = 0;
+    core::iter::from_fn(move || {
+        if n == 0 {
+            length += 1;
+            if length <= 1 {
+                Some(0)
+            } else {
+                None
+            }
+        } else {
+            length += 1;
+            let c = n % 10;
+            n /= 10;
+            Some(c as u8)
+        }
+    })
+}
+
+struct ScoreDisplay {
+    map: RefCell<[u16; 10]>,
+}
+
+impl ScoreDisplay {
+    fn new() -> ScoreDisplay {
+        ScoreDisplay {
+            map: Default::default(),
+        }
+    }
+    fn set_score(&self, score: u32) -> u32 {
+        let mut map = self.map.borrow_mut();
+        let length = num_digits_iter(score).count();
+        for (index, digit) in num_digits_iter(score).enumerate() {
+            map[length - index - 1] = (digit + 1) as u16;
+        }
+        length as u32
+    }
+}
+
 #[no_mangle]
 pub fn main() -> ! {
     let mut agb = agb::Gba::new();
@@ -87,10 +132,14 @@ pub fn main() -> ! {
     gfx.set_sprite_palettes(palette);
     gfx.set_sprite_tilemap(images);
 
-    gfx.set_background_palettes(palette);
+    gfx.set_background_palettes(background_sheet::PALETTE_DATA);
+    gfx.set_background_tilemap(0, background_sheet::TILE_DATA);
+
+    let mut background_score = gfx.get_background().unwrap();
+    let score_display = ScoreDisplay::new();
 
     let vblank = agb.display.vblank.get();
-    let mut objs = gfx.object;
+    let mut objs = agb.display.object.get();
     objs.enable();
 
     let mut character = Character {
@@ -148,8 +197,12 @@ pub fn main() -> ! {
     let one_number_8: Number<8> = 1.into();
     let one: Number<10> = 1.into();
 
+    background_score.set_map_refcell(&score_display.map, 10, 1);
+    background_score.show();
     loop {
         game_frame_count += 1;
+        score_display.set_score(game_frame_count / 60);
+        background_score.draw_full_map();
 
         if !bullet.present {
             input.update();
