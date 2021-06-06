@@ -13,6 +13,11 @@ use agb::sound::mixer::{Mixer, SoundChannel};
 
 use agb::number::{change_base, Number};
 
+mod ship;
+mod vector;
+use ship::Ship;
+pub use vector::Vector2D;
+
 struct RandomNumberGenerator {
     state: [u32; 4],
 }
@@ -36,25 +41,11 @@ impl RandomNumberGenerator {
     }
 }
 
-struct Ship<'a> {
-    object: ObjectAffine<'a>,
-    matrix: AffineMatrix<'a>,
-    position: Vector2D,
-    velocity: Vector2D,
-    angle: Number<8>,
-}
-
 struct Bullet<'a> {
     object: ObjectStandard<'a>,
     position: Vector2D,
     velocity: Vector2D,
     present: bool,
-}
-
-#[derive(Clone, Copy)]
-struct Vector2D {
-    x: Number<10>,
-    y: Number<10>,
 }
 
 struct Asteroid<'a> {
@@ -90,28 +81,7 @@ pub fn main() -> ! {
     let mut objs = gfx.object;
     objs.enable();
 
-    let mut character = Ship {
-        object: objs.get_object_affine(),
-        matrix: objs.get_affine(),
-        position: Vector2D {
-            x: (WIDTH / 2).into(),
-            y: (HEIGHT / 2).into(),
-        },
-        velocity: Vector2D {
-            x: 0.into(),
-            y: 0.into(),
-        },
-        angle: 0.into(),
-    };
-
-    character.object.set_affine_mat(&character.matrix);
-    character.object.show();
-    character.object.set_sprite_size(Size::S16x16);
-    character.object.set_tile_id(0);
-
-    character.matrix.attributes = agb::syscall::affine_matrix(1.into(), 1.into(), 0);
-    character.object.commit();
-    character.matrix.commit();
+    let mut character = Ship::new(&objs);
 
     let mut rng = RandomNumberGenerator {
         state: [0, 1, 2, 3],
@@ -152,42 +122,15 @@ pub fn main() -> ! {
             input.update();
         }
 
-        character.angle -= one_number_8 * (input.x_tri() as i32) / 100;
-        character.matrix.attributes = AffineMatrixAttributes {
-            p_a: character.angle.cos().to_raw() as i16,
-            p_b: -character.angle.sin().to_raw() as i16,
-            p_c: character.angle.sin().to_raw() as i16,
-            p_d: character.angle.cos().to_raw() as i16,
-        };
-        character.matrix.commit();
-
         let acceleration = if input.is_pressed(agb::input::Button::A) {
-            character.object.set_tile_id(4);
             1
         } else {
-            character.object.set_tile_id(0);
             0
         };
-
-        character.velocity.x += change_base(character.angle.cos()) / 40 * acceleration;
-        character.velocity.y += -change_base(character.angle.sin()) / 40 * acceleration;
-
-        character.velocity.x = character.velocity.x * 120 / 121;
-        character.velocity.y = character.velocity.y * 120 / 121;
-
-        character.position.x += character.velocity.x;
-        character.position.y += character.velocity.y;
-
+        character.update_angle(-Number::<8>::new(input.x_tri() as i32) / 50);
+        character.accelerate(acceleration.into());
         character.position.wrap_to_bounds(16, screen_bounds);
-
-        character
-            .object
-            .set_x((character.position.x.floor() - 8) as u16);
-        character
-            .object
-            .set_y((character.position.y.floor() - 8) as u16);
-
-        character.object.commit();
+        character.commit();
 
         if input.is_just_pressed(agb::input::Button::B) {
             input.update();
@@ -311,11 +254,4 @@ fn shoot_sound(mixer: &mut Mixer) {
 
 fn explode_sound(mixer: &mut Mixer) {
     mixer.play_sound(SoundChannel::new(EXPLODE_SOUND));
-}
-
-impl Vector2D {
-    fn wrap_to_bounds(&mut self, size: i32, bounds: Vector2D) {
-        self.x = (self.x + size / 2).rem_euclid(bounds.x + size) - size / 2;
-        self.y = (self.y + size / 2).rem_euclid(bounds.y + size) - size / 2;
-    }
 }
