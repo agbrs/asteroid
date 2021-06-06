@@ -219,7 +219,7 @@ pub fn main() -> ! {
     loop {
         game_frame_count += 1;
         score_display.set_score(game_frame_count / 60);
-        background_score.draw_full_map();
+        background_score.draw_area(0, 0, 10, 1);
 
         if !bullet.present {
             input.update();
