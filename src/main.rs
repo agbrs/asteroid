@@ -385,12 +385,13 @@ pub fn main() -> ! {
             dust_particle_group.ttl -= 1;
 
             dust_particle_group.angle += dust_particle_group.angular_velocity;
+            let scaling_factor = Number::<8>::new(DUST_TTL) / ttl;
 
             dust_particle_group.matrix.attributes = AffineMatrixAttributes {
-                p_a: (dust_particle_group.angle.cos() * DUST_TTL / ttl).to_raw() as i16,
-                p_b: (-dust_particle_group.angle.sin() * DUST_TTL / ttl).to_raw() as i16,
-                p_c: (dust_particle_group.angle.sin() * DUST_TTL / ttl).to_raw() as i16,
-                p_d: (dust_particle_group.angle.cos() * DUST_TTL / ttl).to_raw() as i16,
+                p_a: (dust_particle_group.angle.cos() * scaling_factor).to_raw() as i16,
+                p_b: (-dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
+                p_c: (dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
+                p_d: (dust_particle_group.angle.cos() * scaling_factor).to_raw() as i16,
             };
 
             dust_particle_group.matrix.commit();
