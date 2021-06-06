@@ -1,12 +1,15 @@
 #![no_std]
 #![no_main]
 
+const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
+const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
+
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
     HEIGHT, WIDTH,
 };
 
-use agb::sound::{Channel1, DutyCycle, EnvelopeSettings, Noise, SoundDirection, SweepSettings};
+use agb::sound::mixer::{Mixer, SoundChannel};
 
 use agb::number::{change_base, Number};
 
@@ -70,7 +73,9 @@ mod sprite_sheet {
 #[no_mangle]
 pub fn main() -> ! {
     let mut agb = agb::Gba::new();
-    agb.sound.enable();
+    let mut mixer = agb.mixer.mixer();
+
+    mixer.enable();
 
     let images = sprite_sheet::TILE_DATA;
     let palette = sprite_sheet::PALETTE_DATA;
@@ -191,7 +196,7 @@ pub fn main() -> ! {
             bullet.velocity.x += change_base(character.angle.cos()) * 2;
             bullet.velocity.y += -change_base(character.angle.sin()) * 2;
             bullet.present = true;
-            shoot_sound(agb.sound.channel1())
+            shoot_sound(&mut mixer)
         }
 
         if bullet.present {
@@ -271,12 +276,13 @@ pub fn main() -> ! {
                     *asteroid = None;
                     bullet.present = false;
 
-                    explode_sound(agb.sound.noise());
+                    explode_sound(&mut mixer);
                 }
             }
         }
 
         vblank.wait_for_VBlank();
+        mixer.vblank();
     }
 }
 
@@ -299,24 +305,12 @@ fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: Number<10>) -> bool {
     x * x + y * y < r * r
 }
 
-fn shoot_sound(channel1: Channel1) {
-    channel1.play_sound(
-        1600,
-        Some(15),
-        &SweepSettings::new(7, SoundDirection::Decrease, 7),
-        &EnvelopeSettings::new(5, SoundDirection::Decrease, 15),
-        DutyCycle::OneQuarter,
-    );
+fn shoot_sound(mixer: &mut Mixer) {
+    mixer.play_sound(SoundChannel::new(SHOOT_SOUND));
 }
 
-fn explode_sound(noise: Noise) {
-    noise.play_sound(
-        Some(0),
-        &EnvelopeSettings::new(5, SoundDirection::Decrease, 5),
-        0,
-        false,
-        7,
-    );
+fn explode_sound(mixer: &mut Mixer) {
+    mixer.play_sound(SoundChannel::new(EXPLODE_SOUND));
 }
 
 impl Vector2D {
