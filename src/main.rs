@@ -213,7 +213,6 @@ pub fn main() -> ! {
     let mut dust_particles: [Option<DustParticles>; 8] = Default::default();
 
     let one_number_8: Number<8> = 1.into();
-    let one: Number<10> = 1.into();
 
     background_score.set_map_refcell(&score_display.map, 10, 1);
     background_score.show();
