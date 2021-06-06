@@ -10,4 +10,12 @@ fn main() {
             .output_file(format!("{}/sprite_sheet.rs", out_dir).into())
             .build(),
     );
+    convert_image(
+        ImageConverterConfig::builder()
+            .tile_size(TileSize::Tile8)
+            .transparent_colour(Colour::from_rgb(26, 8, 14))
+            .input_image("gfx/tilemap.png".into())
+            .output_file(format!("{}/background_sheet.rs", out_dir).into())
+            .build(),
+    );
 }
