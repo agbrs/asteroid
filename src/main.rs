@@ -33,7 +33,7 @@ impl RandomNumberGenerator {
     }
 }
 
-struct Character<'a> {
+struct Ship<'a> {
     object: ObjectAffine<'a>,
     matrix: AffineMatrix<'a>,
     position: Vector2D,
@@ -85,7 +85,7 @@ pub fn main() -> ! {
     let mut objs = gfx.object;
     objs.enable();
 
-    let mut character = Character {
+    let mut character = Ship {
         object: objs.get_object_affine(),
         matrix: objs.get_affine(),
         position: Vector2D {
