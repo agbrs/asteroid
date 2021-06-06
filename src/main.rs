@@ -6,6 +6,7 @@ const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
 use core::cell::RefCell;
+use core::ops::AddAssign;
 
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
@@ -67,6 +68,20 @@ struct Asteroid<'a> {
     velocity: Vector2D,
     angle: Number<8>,
     angular_velocity: Number<8>,
+}
+
+struct Dust<'a> {
+    object: ObjectAffine<'a>,
+    position: Vector2D,
+    velocity: Vector2D,
+}
+
+struct DustParticles<'a> {
+    matrix: AffineMatrix<'a>,
+    dusts: [Dust<'a>; 4],
+    angle: Number<8>,
+    angular_velocity: Number<8>,
+    ttl: u32,
 }
 
 mod sprite_sheet {
@@ -193,6 +208,7 @@ pub fn main() -> ! {
 
     let mut game_frame_count = 0;
     let mut asteroids: [Option<Asteroid>; 8] = Default::default();
+    let mut dust_particles: [Option<DustParticles>; 8] = Default::default();
 
     let one_number_8: Number<8> = 1.into();
     let one: Number<10> = 1.into();
@@ -340,6 +356,43 @@ pub fn main() -> ! {
             }
         }
 
+        for dust_particle_group in dust_particles.iter_mut().flatten() {
+            dust_particle_group.ttl -= 1;
+
+            dust_particle_group.angle += dust_particle_group.angular_velocity;
+
+            dust_particle_group.matrix.attributes = AffineMatrixAttributes {
+                p_a: dust_particle_group.angle.cos().to_raw() as i16,
+                p_b: -dust_particle_group.angle.sin().to_raw() as i16,
+                p_c: dust_particle_group.angle.sin().to_raw() as i16,
+                p_d: dust_particle_group.angle.cos().to_raw() as i16,
+            };
+
+            dust_particle_group.matrix.commit();
+
+            for dust_particle in dust_particle_group.dusts.iter_mut() {
+                dust_particle.position += dust_particle.velocity;
+                dust_particle.position.wrap_to_bounds(8, screen_bounds);
+
+                dust_particle
+                    .object
+                    .set_x((dust_particle.position.x.floor() - 4) as u16);
+                dust_particle
+                    .object
+                    .set_y((dust_particle.position.y.floor() - 4) as u16);
+
+                dust_particle.object.commit();
+            }
+        }
+
+        for dust_particle_group in dust_particles.iter_mut() {
+            if let Some(some_dust_particle_group) = dust_particle_group {
+                if some_dust_particle_group.ttl == 0 {
+                    *dust_particle_group = None
+                }
+            }
+        }
+
         vblank.wait_for_VBlank();
         mixer.vblank();
     }
@@ -376,5 +429,12 @@ impl Vector2D {
     fn wrap_to_bounds(&mut self, size: i32, bounds: Vector2D) {
         self.x = (self.x + size / 2).rem_euclid(bounds.x + size) - size / 2;
         self.y = (self.y + size / 2).rem_euclid(bounds.y + size) - size / 2;
+    }
+}
+
+impl AddAssign<Vector2D> for Vector2D {
+    fn add_assign(&mut self, rhs: Vector2D) {
+        self.x += rhs.x;
+        self.y += rhs.y;
     }
 }
