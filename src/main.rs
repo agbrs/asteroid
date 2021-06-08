@@ -5,8 +5,6 @@ const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
 const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
-use core::ops::{Add, AddAssign};
-
 use agb::display::tiled0::Background;
 use agb::display::{
     object::{AffineMatrix, AffineMatrixAttributes, ObjectAffine, ObjectStandard, Size},
@@ -15,7 +13,9 @@ use agb::display::{
 
 use agb::sound::mixer::{Mixer, SoundChannel};
 
-use agb::number::{change_base, FixedNum, Rect};
+use agb::number::{FixedNum, Rect};
+
+type Vector2D = agb::number::Vector2D<FixedNum<10>>;
 
 struct RandomNumberGenerator {
     state: [u32; 4],
@@ -56,13 +56,6 @@ struct Bullet<'a> {
     velocity: Vector2D,
     present: bool,
 }
-
-#[derive(Clone, Copy)]
-struct Vector2D {
-    x: FixedNum<10>,
-    y: FixedNum<10>,
-}
-
 struct Asteroid<'a> {
     object: ObjectAffine<'a>,
     matrix: AffineMatrix<'a>,
@@ -220,7 +213,7 @@ pub fn main() -> ! {
     };
 
     let mut game_frame_count = 0;
-    let mut asteroids: [Option<Asteroid>; 8] = Default::default();
+    let mut asteroids: [Option<Asteroid>; 28] = Default::default();
     let mut dust_particles: [Option<DustParticles>; 8] = Default::default();
 
     let one_number_8: FixedNum<8> = 1.into();
@@ -236,8 +229,8 @@ pub fn main() -> ! {
         character.angle -= one_number_8 * (input.x_tri() as i32) / 100;
         character.matrix.attributes = AffineMatrixAttributes {
             p_a: character.angle.cos().to_raw() as i16,
-            p_b: -character.angle.sin().to_raw() as i16,
-            p_c: character.angle.sin().to_raw() as i16,
+            p_b: character.angle.sin().to_raw() as i16,
+            p_c: -character.angle.sin().to_raw() as i16,
             p_d: character.angle.cos().to_raw() as i16,
         };
         character.matrix.commit();
@@ -250,16 +243,14 @@ pub fn main() -> ! {
             0
         };
 
-        character.velocity.x += change_base(character.angle.cos()) / 40 * acceleration;
-        character.velocity.y += -change_base(character.angle.sin()) / 40 * acceleration;
+        character.velocity +=
+            Vector2D::new_from_angle(character.angle.change_base()) / 40 * acceleration;
 
-        character.velocity.x = character.velocity.x * 120 / 121;
-        character.velocity.y = character.velocity.y * 120 / 121;
+        character.velocity = character.velocity * 120 / 121;
 
-        character.position.x += character.velocity.x;
-        character.position.y += character.velocity.y;
+        character.position += character.velocity;
 
-        character.position.wrap_to_bounds(16, screen_bounds);
+        wrap_to_bounds(&mut character.position, 16, screen_bounds);
 
         character
             .object
@@ -274,16 +265,14 @@ pub fn main() -> ! {
             input.update();
             bullet.position = character.position;
             bullet.velocity = character.velocity;
-            bullet.velocity.x += change_base(character.angle.cos()) * 2;
-            bullet.velocity.y += -change_base(character.angle.sin()) * 2;
+            bullet.velocity += Vector2D::new_from_angle(character.angle.change_base()) * 2;
             bullet.present = true;
             shoot_sound(&mut mixer)
         }
 
         if bullet.present {
-            bullet.position.x += bullet.velocity.x;
-            bullet.position.y += bullet.velocity.y;
-            bullet.position.wrap_to_bounds(8, screen_bounds);
+            bullet.position += bullet.velocity;
+            wrap_to_bounds(&mut bullet.position, 8, screen_bounds);
             bullet.object.set_x((bullet.position.x.floor() - 4) as u16);
             bullet.object.set_y((bullet.position.y.floor() - 4) as u16);
             bullet.object.show();
@@ -328,16 +317,15 @@ pub fn main() -> ! {
         }
 
         for asteroid in asteroids.iter_mut().flatten() {
-            asteroid.position.x += asteroid.velocity.x;
-            asteroid.position.y += asteroid.velocity.y;
+            asteroid.position += asteroid.velocity;
 
             asteroid.angle += asteroid.angular_velocity;
-            asteroid.position.wrap_to_bounds(16, screen_bounds);
+            wrap_to_bounds(&mut asteroid.position, 16, screen_bounds);
 
             asteroid.matrix.attributes = AffineMatrixAttributes {
                 p_a: asteroid.angle.cos().to_raw() as i16,
-                p_b: -asteroid.angle.sin().to_raw() as i16,
-                p_c: asteroid.angle.sin().to_raw() as i16,
+                p_b: asteroid.angle.sin().to_raw() as i16,
+                p_c: -asteroid.angle.sin().to_raw() as i16,
                 p_d: asteroid.angle.cos().to_raw() as i16,
             };
 
@@ -397,8 +385,8 @@ pub fn main() -> ! {
 
             dust_particle_group.matrix.attributes = AffineMatrixAttributes {
                 p_a: (dust_particle_group.angle.cos() * scaling_factor).to_raw() as i16,
-                p_b: (-dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
-                p_c: (dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
+                p_b: (dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
+                p_c: (-dust_particle_group.angle.sin() * scaling_factor).to_raw() as i16,
                 p_d: (dust_particle_group.angle.cos() * scaling_factor).to_raw() as i16,
             };
 
@@ -406,7 +394,7 @@ pub fn main() -> ! {
 
             for dust_particle in dust_particle_group.dusts.iter_mut() {
                 dust_particle.position += dust_particle.velocity;
-                dust_particle.position.wrap_to_bounds(8, screen_bounds);
+                wrap_to_bounds(&mut dust_particle.position, 8, screen_bounds);
 
                 dust_particle
                     .object
@@ -480,25 +468,7 @@ fn explode_sound(mixer: &mut Mixer) {
     mixer.play_sound(SoundChannel::new(EXPLODE_SOUND));
 }
 
-impl Vector2D {
-    fn wrap_to_bounds(&mut self, size: i32, bounds: Vector2D) {
-        self.x = (self.x + size / 2).rem_euclid(bounds.x + size) - size / 2;
-        self.y = (self.y + size / 2).rem_euclid(bounds.y + size) - size / 2;
-    }
-}
-
-impl AddAssign<Vector2D> for Vector2D {
-    fn add_assign(&mut self, rhs: Vector2D) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
-}
-
-impl Add<Vector2D> for Vector2D {
-    type Output = Self;
-    fn add(self, rhs: Vector2D) -> Self {
-        let mut c = self.clone();
-        c += rhs;
-        c
-    }
+fn wrap_to_bounds(v: &mut Vector2D, size: i32, bounds: Vector2D) {
+    v.x = (v.x + size / 2).rem_euclid(bounds.x + size) - size / 2;
+    v.y = (v.y + size / 2).rem_euclid(bounds.y + size) - size / 2;
 }
