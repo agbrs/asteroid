@@ -16,7 +16,7 @@ use agb::display::{
 
 use agb::sound::mixer::{Mixer, SoundChannel};
 
-use agb::number::{change_base, Number};
+use agb::number::{change_base, FixedNum, Rect};
 
 struct RandomNumberGenerator {
     state: [u32; 4],
@@ -48,7 +48,7 @@ struct Character<'a> {
     matrix: AffineMatrix<'a>,
     position: Vector2D,
     velocity: Vector2D,
-    angle: Number<8>,
+    angle: FixedNum<8>,
 }
 
 struct Bullet<'a> {
@@ -60,8 +60,8 @@ struct Bullet<'a> {
 
 #[derive(Clone, Copy)]
 struct Vector2D {
-    x: Number<10>,
-    y: Number<10>,
+    x: FixedNum<10>,
+    y: FixedNum<10>,
 }
 
 struct Asteroid<'a> {
@@ -69,8 +69,8 @@ struct Asteroid<'a> {
     matrix: AffineMatrix<'a>,
     position: Vector2D,
     velocity: Vector2D,
-    angle: Number<8>,
-    angular_velocity: Number<8>,
+    angle: FixedNum<8>,
+    angular_velocity: FixedNum<8>,
 }
 
 struct Dust<'a> {
@@ -82,8 +82,8 @@ struct Dust<'a> {
 struct DustParticles<'a> {
     matrix: AffineMatrix<'a>,
     dusts: [Dust<'a>; 4],
-    angle: Number<8>,
-    angular_velocity: Number<8>,
+    angle: FixedNum<8>,
+    angular_velocity: FixedNum<8>,
     ttl: i32,
 }
 
@@ -137,8 +137,11 @@ impl ScoreDisplay {
         for (index, digit) in num_digits_iter(score).enumerate() {
             self.map[length - index - 1] = (digit + 1) as u16;
         }
-        self.background
-            .draw_area(&self.map, 10, 1, 0, 0, length as i32, 1);
+        self.background.draw_area(
+            &self.map,
+            (10, 1).into(),
+            Rect::new((0, 0).into(), (length as i32, 1).into()),
+        );
         self.background.show();
     }
 }
@@ -221,7 +224,7 @@ pub fn main() -> ! {
     let mut asteroids: [Option<Asteroid>; 8] = Default::default();
     let mut dust_particles: [Option<DustParticles>; 8] = Default::default();
 
-    let one_number_8: Number<8> = 1.into();
+    let one_number_8: FixedNum<8> = 1.into();
 
     loop {
         game_frame_count += 1;
@@ -300,11 +303,11 @@ pub fn main() -> ! {
                     y: (HEIGHT / 2).into(),
                 },
                 velocity: Vector2D {
-                    x: Number::<10>::from_raw(rng.next()) % 1,
-                    y: Number::<10>::from_raw(rng.next()) % 1,
+                    x: FixedNum::<10>::from_raw(rng.next()) % 1,
+                    y: FixedNum::<10>::from_raw(rng.next()) % 1,
                 },
-                angular_velocity: Number::<8>::from_raw(rng.next()) % (one_number_8 / 50),
-                angle: Number::<8>::from_raw(rng.next()) % 1,
+                angular_velocity: FixedNum::<8>::from_raw(rng.next()) % (one_number_8 / 50),
+                angle: FixedNum::<8>::from_raw(rng.next()) % 1,
             };
             new_asteroid.object.set_sprite_size(Size::S16x16);
             new_asteroid.object.set_affine_mat(&new_asteroid.matrix);
@@ -366,9 +369,9 @@ pub fn main() -> ! {
                     for dust_group in dust_particles.iter_mut() {
                         if dust_group.is_none() {
                             *dust_group = Some(DustParticles {
-                                angular_velocity: Number::<8>::from_raw(rng.next())
+                                angular_velocity: FixedNum::<8>::from_raw(rng.next())
                                     % (one_number_8 / 50),
-                                angle: Number::<8>::from_raw(rng.next()) % 1,
+                                angle: FixedNum::<8>::from_raw(rng.next()) % 1,
                                 dusts: new_dust_particles,
                                 matrix: affine,
                                 ttl: DUST_TTL,
@@ -391,7 +394,7 @@ pub fn main() -> ! {
             dust_particle_group.ttl -= 1;
 
             dust_particle_group.angle += dust_particle_group.angular_velocity;
-            let scaling_factor = Number::<8>::new(DUST_TTL) / ttl;
+            let scaling_factor = FixedNum::<8>::new(DUST_TTL) / ttl;
 
             dust_particle_group.matrix.attributes = AffineMatrixAttributes {
                 p_a: (dust_particle_group.angle.cos() * scaling_factor).to_raw() as i16,
@@ -445,8 +448,8 @@ fn create_dust_particle<'a>(
         position: ast.position,
         velocity: ast.velocity
             + Vector2D {
-                x: Number::<10>::from_raw(rng.next()) % 1,
-                y: Number::<10>::from_raw(rng.next()) % 1,
+                x: FixedNum::<10>::from_raw(rng.next()) % 1,
+                y: FixedNum::<10>::from_raw(rng.next()) % 1,
             },
     }
 }
@@ -463,7 +466,7 @@ fn axis_aligned_bounding_box_check(
         && pos_a.y + size_a.y > pos_b.y
 }
 
-fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: Number<10>) -> bool {
+fn circle_collision(pos_a: Vector2D, pos_b: Vector2D, r: FixedNum<10>) -> bool {
     let x = pos_a.x - pos_b.x;
     let y = pos_a.y - pos_b.y;
 
