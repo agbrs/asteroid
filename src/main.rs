@@ -5,7 +5,6 @@ const SHOOT_SOUND: &'static [u8] = include_bytes!("../sfx/shoot.raw");
 const EXPLODE_SOUND: &'static [u8] = include_bytes!("../sfx/explode.raw");
 const BACKGROUND_MUSIC: &'static [u8] = include_bytes!("../sfx/background_music.raw");
 
-use core::cell::RefCell;
 use core::ops::{Add, AddAssign};
 
 use agb::display::tiled0::Background;
