@@ -254,10 +254,7 @@ pub fn main() -> ! {
 
         character
             .object
-            .set_x((character.position.x.floor() - 8) as u16);
-        character
-            .object
-            .set_y((character.position.y.floor() - 8) as u16);
+            .set_position(character.position.floor() - (8, 8).into());
 
         character.object.commit();
 
@@ -273,8 +270,9 @@ pub fn main() -> ! {
         if bullet.present {
             bullet.position += bullet.velocity;
             wrap_to_bounds(&mut bullet.position, 8, screen_bounds);
-            bullet.object.set_x((bullet.position.x.floor() - 4) as u16);
-            bullet.object.set_y((bullet.position.y.floor() - 4) as u16);
+            bullet
+                .object
+                .set_position(bullet.position.floor() - (4, 4).into());
             bullet.object.show();
             bullet.object.commit();
         } else {
@@ -331,10 +329,7 @@ pub fn main() -> ! {
 
             asteroid
                 .object
-                .set_x((asteroid.position.x.floor() - 8) as u16);
-            asteroid
-                .object
-                .set_y((asteroid.position.y.floor() - 8) as u16);
+                .set_position(asteroid.position.floor() - (8, 8).into());
             asteroid.object.commit();
             asteroid.matrix.commit();
         }
@@ -398,10 +393,7 @@ pub fn main() -> ! {
 
                 dust_particle
                     .object
-                    .set_x((dust_particle.position.x.floor() - 4) as u16);
-                dust_particle
-                    .object
-                    .set_y((dust_particle.position.y.floor() - 4) as u16);
+                    .set_position(dust_particle.position.floor() - (4, 4).into());
 
                 dust_particle.object.commit();
             }
